@@ -28,8 +28,8 @@ namespace JaProj
                 NalozFiltrGaussa(input, output, input.Length, width, startIndex, pixelCount);
             });
         }
-
-        // Metoda wywołania filtra Assembler (multithreaded)
+       
+        // Metoda wywołania filtra Assembler (multithreaded)s
         public static Bitmap ApplyGaussianFilterAsm(Bitmap sourceImage, int threadCount)
         {
             return ApplyFilterMultithreaded(sourceImage, threadCount, (input, output, startIndex, endIndex, width) =>
