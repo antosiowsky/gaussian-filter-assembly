@@ -20,16 +20,13 @@ namespace JaProj
         public static extern void CppProc(byte[] inputData, byte[] outputData, int totalLength, int imageWidth, int startIndex, int pixelCount);
 
 
-
-
-
         // Metoda wywołania filtra C++ (multithreaded)
         public static Bitmap ApplyGaussianFilterCpp(Bitmap sourceImage, int threadCount)
         {
             return ApplyFilterMultithreaded(sourceImage, threadCount, (input, output, startIndex, endIndex, width) =>
             {
                 int pixelCount = endIndex - startIndex;
-                CppProc(input, output, input.Length, width, startIndex, pixelCount);
+                CppProc(input, output, startIndex, endIndex, width, input.Length);
             });
         }
 
@@ -44,9 +41,9 @@ namespace JaProj
 
         // Funkcja wspólna dla C++ i Assemblera, z obsługą wielu wątków
         private static Bitmap ApplyFilterMultithreaded(
-     Bitmap sourceImage,
-     int threadCount,
-     Action<byte[], byte[], int, int, int> filterFunction)
+        Bitmap sourceImage,
+        int threadCount,
+        Action<byte[], byte[], int, int, int> filterFunction)
         {
             if (sourceImage.PixelFormat != PixelFormat.Format24bppRgb &&
                 sourceImage.PixelFormat != PixelFormat.Format32bppArgb)
@@ -99,8 +96,6 @@ class Program
     [STAThread]
     static void Main(string[] args)
     {
-        
-
         var app = new App();
         app.InitializeComponent();
         app.Run();

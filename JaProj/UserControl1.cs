@@ -6,6 +6,8 @@ using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using ClosedXML.Excel;
+
 
 namespace JaProj
 {
@@ -23,6 +25,71 @@ namespace JaProj
         private void ThreadSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             ThreadCountDisplay.Text = ((int)ThreadSlider.Value).ToString();
+        }
+
+        private void GenerujExcelPrzycisk_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Pliki Excel|*.xlsx";
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                string filePath = saveFileDialog.FileName;
+
+                // Prepare data for testing
+                int maxRepetitions = 10; // Can be adjusted
+                int maxThreads = (int)ThreadSlider.Maximum; // Ensure max thread count matches slider
+
+                // Create a new workbook
+                using (var workbook = new XLWorkbook())
+                {
+                    var worksheet = workbook.Worksheets.Add("Execution Times");
+
+                    // Add headers
+                    worksheet.Cell(1, 1).Value = "Liczba Wątków";
+                    for (int rep = 1; rep <= maxRepetitions; rep++)
+                    {
+                        worksheet.Cell(1, rep + 1).Value = $"Powtórzenia {rep}";
+                    }
+
+                    // Iterate over thread counts and repetitions
+                    for (int threadCount = 1; threadCount <= maxThreads; threadCount++)
+                    {
+                        worksheet.Cell(threadCount + 1, 1).Value = threadCount;
+
+                        for (int repetitions = 1; repetitions <= maxRepetitions; repetitions++)
+                        {
+                            long totalTime = 0;
+
+                            // Perform the operation multiple times to get average
+                            for (int i = 0; i < 3; i++) // Run each case 3 times for averaging
+                            {
+                                Stopwatch stopwatch = new Stopwatch();
+                                stopwatch.Start();
+
+                                Bitmap tempBitmap = (Bitmap)originalBitmap.Clone();
+
+                                for (int j = 0; j < repetitions; j++)
+                                {
+                                    // Replace with actual processing function
+                                    tempBitmap = GaussianFilter.ApplyGaussianFilterCpp(tempBitmap, threadCount);
+                                }
+
+                                stopwatch.Stop();
+                                totalTime += stopwatch.ElapsedMilliseconds;
+                            }
+
+                            // Calculate the average time
+                            long averageTime = totalTime / 3;
+                            worksheet.Cell(threadCount + 1, repetitions + 1).Value = averageTime;
+                        }
+                    }
+
+                    // Save workbook to the specified file
+                    workbook.SaveAs(filePath);
+
+                    MessageBox.Show("Plik Excel został wygenerowany pomyślnie.", "Informacja", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
         }
 
         private void PrzegladajPlikiPrzycisk_Click(object sender, RoutedEventArgs e)

@@ -67,6 +67,8 @@
             <Button x:Name="ZapiszBitmapePrzycisk" Grid.Column="2" Grid.Row="2" 
                     Content="Zapisz wynik" FontWeight="Bold" FontSize="12" IsEnabled="False" 
                     Click="ZapiszBitmapePrzycisk_Click" Padding="2" Margin="35,26,35,-5" />
+            <Button Name="GenerujExcelPrzycisk" Content="Generuj Excel" Click="GenerujExcelPrzycisk_Click" IsEnabled="True" Margin="39,30,40,-1" Grid.Row="2" Grid.Column="1" />
+
         </Grid>
 
         <Image x:Name="ObrazPodglad" HorizontalAlignment="Center" VerticalAlignment="Top" 
