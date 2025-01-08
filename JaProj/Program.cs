@@ -17,7 +17,11 @@ namespace JaProj
         public static extern void AsmProc(byte[] inputData, byte[] outputData, int startIndex, int endIndex, int width);
 
         [DllImport(@"C:\Users\grawe\source\repos\JA_PROJEKT\JaProj\x64\Debug\JaCpp.dll")]
-        public static extern void NalozFiltrGaussa(byte[] inputData, byte[] outputData, int totalLength, int imageWidth, int startIndex, int pixelCount);
+        public static extern void CppProc(byte[] inputData, byte[] outputData, int totalLength, int imageWidth, int startIndex, int pixelCount);
+
+
+
+
 
         // Metoda wywołania filtra C++ (multithreaded)
         public static Bitmap ApplyGaussianFilterCpp(Bitmap sourceImage, int threadCount)
@@ -25,7 +29,7 @@ namespace JaProj
             return ApplyFilterMultithreaded(sourceImage, threadCount, (input, output, startIndex, endIndex, width) =>
             {
                 int pixelCount = endIndex - startIndex;
-                NalozFiltrGaussa(input, output, input.Length, width, startIndex, pixelCount);
+                CppProc(input, output, input.Length, width, startIndex, pixelCount);
             });
         }
 
@@ -35,7 +39,7 @@ namespace JaProj
             return ApplyFilterMultithreaded(sourceImage, threadCount, (input, output, startIndex, endIndex, width) =>
             {
                 int pixelCount = endIndex - startIndex;
-                AsmProc(input, output, startIndex, endIndex, width);
+                AsmProc(input, output, startIndex, endIndex, width*3);
             });
         }
 
@@ -96,21 +100,7 @@ class Program
     [STAThread]
     static void Main(string[] args)
     {
-        //try
-        //{
-        //    Console.WriteLine("Loading input image...");
-        //    Bitmap inputImage = new Bitmap(@"C:\Users\grawe\source\repos\JA_PROJEKT\JaProj\JaProj\input.jpg");
-
-        //    Console.WriteLine("Applying Gaussian filter (C++, multithreaded)...");
-        //    Bitmap outputImageCpp = GaussianFilter.ApplyGaussianFilterCpp(inputImage, 4);
-        //    outputImageCpp.Save("output_cpp.jpg", ImageFormat.Jpeg);
-
-        //    Console.WriteLine("Processing completed.");
-        //}
-        //catch (Exception ex)
-        //{
-        //    Console.WriteLine("An error occurred: " + ex.Message);
-        //}
+        
 
         var app = new App();
         app.InitializeComponent();

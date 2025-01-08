@@ -1,119 +1,98 @@
-.data
-gaussian_kernel db 1, 2, 1, 2, 4, 2, 1, 2, 1  ; J¹dro Gaussa 3x3
-kernel_sum dd 16                           ; Suma wag j¹dra
+;RCX - OldPixels pointer
+;R12 - NewPixels pointer
+;R8 - Starting index
+;R9 - End index
+;R10 - width
+;R11 - Negative width
 
-image_width dd 320                         ; Szerokoœæ obrazu (w pikselach)
-image_height dd 240                        ; Wysokoœæ obrazu (w pikselach)
+.data
+multiArray word 1, 2, 1, 2, 4, 2, 1, 2, 1
+normalizationFactor dq 16.0 ; Normalization factor
 
 .code
-; Funkcja Gaussa: gauss_filter
-; Argumenty:
-; rsi - wskaŸnik do tablicy wejœciowej (inputData)
-; rdi - wskaŸnik do tablicy wyjœciowej (outputData)
-; rcx - szerokoœæ obrazu
-; rdx - wysokoœæ obrazu
-AsmProc PROC
-    push rbx
-    push rbp
-    push rsi
-    push rdi
+AsmProc proc
+    sub rsp, 40 ; Allocate shadow space for fastcall
 
-    ; Parametry: obraz RGB, 3x3 j¹dro Gaussa
-    ; rcx = szerokoœæ obrazu (image_width)
-    ; rdx = wysokoœæ obrazu (image_height)
+    movdqu xmm4, oword ptr[multiArray]      ;Load mask array
+    movsd xmm5, qword ptr[normalizationFactor] ; Load normalization factor
 
-    mov r8, rcx                ; szerokoœæ obrazu
-    mov r9, rdx                ; wysokoœæ obrazu
-    lea rsi, [rsi]             ; wskaŸnik do tablicy wejœciowej
-    lea rdi, [rdi]             ; wskaŸnik do tablicy wyjœciowej
+    mov ebx, dword ptr[rbp + 48]          ;Image width
+    mov r10, rbx                          ;Store width
+    xor r11, r11                          ;Clear r11
+    sub r11, r10                          ;Negative width
 
-    ; G³ówna pêtla iteracji po pikselach
-    mov r10d, 1                ; zaczynamy od pierwszego piksela
-pixel_loop:
-    cmp r10d, r9               ; Czy przekroczyliœmy wysokoœæ obrazu?
-    jge end_loop               ; Jeœli tak, koñczymy
+    mov r12, rdx                          ;New pixels pointer
+    mov rdi, r8                           ;Starting index
+    add rcx, r8                           ;Offset old pixels pointer
+    add R12, r8                           ;Offset new pixels pointer
 
-    mov r11d, 1                ; Rozpoczynamy iteracjê przez szerokoœæ
-column_loop:
-    cmp r11d, r8               ; Czy przekroczyliœmy szerokoœæ obrazu?
-    jge next_row               ; Jeœli tak, przejdŸ do nastêpnego wiersza
+programLoop:
+    cmp rdi, r9                           ;Loop condition
+    je endLoop
 
-    ; Oblicz indeks piksela (wyci¹gamy x, y, i wiersz, i kolumnê w pamiêci)
-    mov eax, r10d              ; Wiersz obrazu
-    imul eax, r8               ; Wiersz * szerokoœæ obrazu
-    add eax, r11d              ; Dodaj kolumnê (piksel)
-    imul eax, 3                ; Mno¿enie przez 3 (RGB)
-    lea rsi, [rsi + rax]       ; Oblicz przesuniêcie do aktualnego piksela (RGB)
+    pxor xmm1, xmm1                       ;Clear registers
+    pxor xmm2, xmm2
+    pxor xmm3, xmm3
 
-    ; Inicjalizuj sumy kolorów (R, G, B) w xmm0
-    pxor xmm0, xmm0            ; Zerujemy sumy R
-    pxor xmm1, xmm1            ; Zerujemy sumy G
-    pxor xmm2, xmm2            ; Zerujemy sumy B
+    pinsrb xmm1, byte ptr[RCX + R11], 1      ;Id.1. Locate mask values 1 in xmm1
+    pinsrb xmm1, byte ptr[RCX + R11 + 3], 2    ;Id.2. Locate mask values 1 in xmm1
+    pinsrb xmm1, byte ptr[RCX + 3], 4        ;Id.4. Locate mask values 1 in xmm1
+    pinsrb xmm1, byte ptr[RCX + R10], 6      ;Id.6. Locate mask values 1 in xmm1
+    pinsrb xmm1, byte ptr[RCX + R10 + 3], 7    ;Id.7. Locate mask values 1 in xmm1
 
-    ; Iteracja przez j¹dro 3x3
-    mov r12d, -1               ; Start wierszy w j¹drze: -1
-row_loop:
-    cmp r12d, 1                ; Iterujemy przez 3 wiersze
-    jg pixel_store
+    pinsrb xmm3, byte ptr[RCX + R11 - 3], 0    ;Id.0. Locate mask values -1 in xmm3
+    pinsrb xmm3, byte ptr[RCX - 3], 1      ;Id.1. Locate mask values -1 in xmm3
+    pinsrb xmm3, byte ptr[RCX + R10 - 3], 2    ;Id.2. Locate mask values -1 in xmm3
 
-    mov r13d, -1               ; Start kolumny w j¹drze: -1
-col_loop:
-    cmp r13d, 1                ; Iterujemy przez 3 kolumny
-    jg next_row
+    psadbw xmm3, xmm2                     ;Sum pixel values with mask value -1
 
-    ; Oblicz przesuniêcie do s¹siaduj¹cego piksela
-    mov eax, r12d
-    imul eax, r8               ; Wiersz * szerokoœæ obrazu w pikselach
-    add eax, r13d              ; Dodanie kolumny
-    imul eax, 3                ; Mno¿enie przez 3 (RGB)
-    lea rsi2, [rsi + rax]      ; Przesuniêcie do s¹siedniego piksela
+    pinsrb xmm3, byte ptr[RCX], 4          ;Id.4. Locate pixel with mask value -2 in xmm3
 
-    ; Za³aduj wartoœci piksela s¹siedniego do xmm3
-    movdqu xmm3, oword ptr [rsi2]
+    pmullw xmm3, xmm4                     ;Multiply values in xmm3 with filter mask values stored in xmm4
 
-    ; Mno¿enie przez wagê j¹dra
-    movzx r14d, byte ptr [gaussian_kernel + (r12d + 1) * 3 + r13d + 1]
-    pmuludq xmm3, r14d         ; Mno¿enie przez wagê (R, G, B)
+    pxor xmm2, xmm2                       ;Clear xmm2
+    psadbw xmm1, xmm2                     ;Sum pixel values with mask value 1
 
-    ; Dodaj wyniki do sum
-    paddd xmm0, xmm3
+    paddsw xmm1, xmm3                     ;Sum signed values
+    pshufd xmm3, xmm3, 00111001b            ;Shuffle for correct summation
+    paddsw xmm1, xmm3                     ;Sum signed values
 
-    inc r13d                   ; Kolejna kolumna w j¹drze
-    jmp col_loop
+    ; Correct Normalization (using pextrw - most efficient):
+    pextrw eax, xmm1, 0        ; Extract word at index 0 (lower word) to EAX
+    movsx eax, ax              ; Sign-extend AX to EAX (important!)
+    cvtsi2sd xmm0, eax        ; Convert to double
+    divsd xmm0, xmm5          ; Divide by normalization factor
 
-next_row:
-    inc r12d                   ; Kolejny wiersz w j¹drze
-    jmp row_loop
+    ; Rounding and clamping:
+    roundsd xmm0, xmm0, 0     ; Round to nearest integer
+    cvtsd2si eax, xmm0        ; Convert back to signed integer
 
-pixel_store:
-    ; Normalizacja przez kernel_sum
-    mov eax, kernel_sum
-    movd xmm5, eax             ; Za³aduj kernel_sum do xmm5
-    cvtdq2ps xmm0, xmm0        ; Konwertuj R na zmiennoprzecinkowe
-    cvtdq2ps xmm1, xmm1        ; Konwertuj G na zmiennoprzecinkowe
-    cvtdq2ps xmm2, xmm2        ; Konwertuj B na zmiennoprzecinkowe
-    divps xmm0, xmm5           ; Podziel R przez kernel_sum
-    divps xmm1, xmm5           ; Podziel G przez kernel_sum
-    divps xmm2, xmm5           ; Podziel B przez kernel_sum
-    cvttps2dq xmm0, xmm0       ; Konwertuj R na liczby ca³kowite
-    cvttps2dq xmm1, xmm1       ; Konwertuj G na liczby ca³kowite
-    cvttps2dq xmm2, xmm2       ; Konwertuj B na liczby ca³kowite
+    cmp eax, 0
+    jl zeroValue            ; Jump if negative
 
-    ; Zapisz wynik do tablicy wyjœciowej
-    movdqu oword ptr [rdi + rax], xmm0
+    cmp eax, 255
+    jg maxVal                ; Jump if greater than 255
 
-    inc r11d                   ; Nastêpny piksel w kolumnie
-    jmp column_loop
+    mov byte ptr[R12], al    ; Store the normalized and clamped value
+    jmp continueLoop
 
-next_row:
-    inc r10d                   ; PrzejdŸ do nastêpnego wiersza
-    jmp pixel_loop
+zeroValue:
+    mov eax, 0
+    mov byte ptr[R12], al
+    jmp continueLoop
 
-end_loop:
-    pop rdi
-    pop rsi
-    pop rbp
-    pop rbx
+maxVal:
+    mov eax, 255
+    mov byte ptr[R12], al
+
+continueLoop:
+    inc rdi                 ;Increment loop counter
+    inc rcx                 ;Increment original pixels index
+    inc R12                 ;Increment new pixels index
+    jmp programLoop
+
+endLoop:
+    add rsp, 40 ; Restore stack
     ret
-AsmProc ENDP
+AsmProc endp
 end
