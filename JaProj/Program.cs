@@ -38,7 +38,6 @@ namespace JaProj
         {
             return ApplyFilterMultithreaded(sourceImage, threadCount, (input, output, startIndex, endIndex, width) =>
             {
-                int pixelCount = endIndex - startIndex;
                 AsmProc(input, output, startIndex, endIndex, width*3);
             });
         }

@@ -7,7 +7,7 @@
 
 .data
 multiArray word 1, 2, 1, 2, 4, 2, 1, 2, 1
-normalizationFactor dq 16.0 ; Normalization factor
+normalizationFactor dq 9.0 ; Normalization factor
 
 .code
 AsmProc proc
