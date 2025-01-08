@@ -29,6 +29,7 @@ namespace JaProj
 
         private void GenerujExcelPrzycisk_Click(object sender, RoutedEventArgs e)
         {
+            string selectedDll = (DllSelector.SelectedItem as ComboBoxItem)?.Content.ToString();
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "Pliki Excel|*.xlsx";
             if (saveFileDialog.ShowDialog() == true)
@@ -68,11 +69,21 @@ namespace JaProj
 
                                 Bitmap tempBitmap = (Bitmap)originalBitmap.Clone();
 
-                                for (int j = 0; j < repetitions; j++)
+                                if (selectedDll == "C++")
                                 {
-                                    // Replace with actual processing function
-                                    tempBitmap = GaussianFilter.ApplyGaussianFilterCpp(tempBitmap, threadCount);
+                                    for (int j = 0; j < repetitions; j++)
+                                    {
+                                        tempBitmap = GaussianFilter.ApplyGaussianFilterCpp(tempBitmap, threadCount);
+                                    }
                                 }
+                                else if (selectedDll == "Assembler")
+                                {
+                                    for (int j = 0; j < repetitions; j++)
+                                    {
+                                        tempBitmap = GaussianFilter.ApplyGaussianFilterCpp(tempBitmap, threadCount);
+                                    }
+                                }
+                                
 
                                 stopwatch.Stop();
                                 totalTime += stopwatch.ElapsedMilliseconds;
