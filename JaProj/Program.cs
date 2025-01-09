@@ -25,8 +25,8 @@ namespace JaProj
         {
             return ApplyFilterMultithreaded(sourceImage, threadCount, (input, output, startIndex, endIndex, width) =>
             {
-                int pixelCount = endIndex - startIndex;
-                CppProc(input, output, startIndex, endIndex, width, input.Length);
+                int height = input.Length;
+                CppProc(input, output, startIndex, endIndex, width, height);
             });
         }
 
@@ -70,6 +70,7 @@ namespace JaProj
             fragmentSize -= fragmentSize % bytesPerPixel;
 
             List<Task> tasks = new List<Task>();
+
 
             for (int i = 0; i < threadCount; i++)
             {

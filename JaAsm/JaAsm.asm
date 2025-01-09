@@ -38,9 +38,9 @@ AsmProc proc
     add rcx, r8                      ; Przesuniêcie wskaŸnika do starych pikseli
     add R12, r8                      ; Przesuniêcie wskaŸnika do nowych pikseli
 
-programLoop:
+mainLoop:                            ; G³ówna pêtla przetwarzania
     cmp rdi, r9                      ; Sprawdzenie warunku zakoñczenia pêtli
-    je endLoop
+    je exitLoop                      ; Wyjœcie z pêtli, jeœli indeks osi¹gnie koñcowy
 
     pxor xmm1, xmm1                  ; Wyczyszczenie rejestrów
     pxor xmm2, xmm2
@@ -80,26 +80,26 @@ programLoop:
     cmp eax, 0
     jl zeroValue
     cmp eax, 255
-    jg maxVal
+    jg maxValue
     mov byte ptr[R12], al
-    jmp continueLoop
+    jmp nextPixel
 
 zeroValue:
     mov eax, 0
     mov byte ptr[R12], al
-    jmp continueLoop
+    jmp nextPixel
 
-maxVal:
+maxValue:
     mov eax, 255
     mov byte ptr[R12], al
 
-continueLoop:
+nextPixel:
     inc rdi                          ; Zwiêkszenie indeksu pêtli
     inc rcx                          ; Przesuniêcie wskaŸnika starych pikseli
     inc R12                          ; Przesuniêcie wskaŸnika nowych pikseli
-    jmp programLoop
+    jmp mainLoop                     ; Powrót do pocz¹tku pêtli
 
-endLoop:
+exitLoop:
     add rsp, 40                      ; Przywrócenie stosu
     ret
 AsmProc endp

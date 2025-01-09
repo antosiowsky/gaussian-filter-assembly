@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using ClosedXML.Excel;
+using System.Threading;
 
 
 namespace JaProj
@@ -36,72 +37,94 @@ namespace JaProj
             {
                 string filePath = saveFileDialog.FileName;
 
-                // Prepare data for testing
-                int maxRepetitions = 20; // Can be adjusted
-                int maxThreads = (int)ThreadSlider.Maximum; // Ensure max thread count matches slider
+                // Stałe konfiguracje
+                int[] threadConfigurations = { 1, 2, 4, 8, 16, 32, 64 };
+                int repetitions = 5;
 
-                // Create a new workbook
+                // Tworzenie nowego skoroszytu
                 using (var workbook = new XLWorkbook())
                 {
                     var worksheet = workbook.Worksheets.Add("Execution Times");
 
-                    // Add headers
+                    // Dodawanie nagłówków
                     worksheet.Cell(1, 1).Value = "Liczba Wątków";
-                    for (int rep = 1; rep <= maxRepetitions; rep++)
+                    for (int rep = 1; rep <= repetitions; rep++)
                     {
-                        worksheet.Cell(1, rep + 1).Value = $"Powtórzenia {rep}";
+                        worksheet.Cell(1, rep + 1).Value = $"Powtórzenie {rep}";
                     }
+                    worksheet.Cell(1, repetitions + 2).Value = "Średni Czas [ms]";
 
-                    // Iterate over thread counts and repetitions
-                    for (int threadCount = 1; threadCount <= maxThreads; threadCount++)
+                    // Iteracja po konfiguracjach liczby wątków
+                    int row = 2;
+                    foreach (int threadCount in threadConfigurations)
                     {
-                        worksheet.Cell(threadCount + 1, 1).Value = threadCount;
+                        worksheet.Cell(row, 1).Value = threadCount;
 
-                        for (int repetitions = 1; repetitions <= maxRepetitions; repetitions++)
+                        long totalAverageTime = 0;
+
+                        for (int rep = 1; rep <= repetitions; rep++)
                         {
                             long totalTime = 0;
 
-                            // Perform the operation multiple times to get average
-                            for (int i = 0; i < 3; i++) // Run each case 3 times for averaging
+                            // Wykonywanie operacji 5 razy dla średniej
+                            for (int i = 0; i < 5; i++)
                             {
                                 Stopwatch stopwatch = new Stopwatch();
                                 stopwatch.Start();
 
                                 Bitmap tempBitmap = (Bitmap)originalBitmap.Clone();
-
-                                if (selectedDll == "C++")
+                                try
                                 {
-                                    for (int j = 0; j < repetitions; j++)
+                                    if (selectedDll == "C++")
                                     {
                                         tempBitmap = GaussianFilter.ApplyGaussianFilterCpp(tempBitmap, threadCount);
                                     }
-                                }
-                                else if (selectedDll == "Assembler")
-                                {
-                                    for (int j = 0; j < repetitions; j++)
+                                    else if (selectedDll == "Assembler")
                                     {
-                                        tempBitmap = GaussianFilter.ApplyGaussianFilterCpp(tempBitmap, threadCount);
+                                        tempBitmap = GaussianFilter.ApplyGaussianFilterAsm(tempBitmap, threadCount);
                                     }
                                 }
-                                
+                                finally
+                                {
+                                    tempBitmap.Dispose();
+                                }
 
                                 stopwatch.Stop();
                                 totalTime += stopwatch.ElapsedMilliseconds;
+
+                                // Krótka przerwa między iteracjami
+                                Thread.Sleep(50);
                             }
 
-                            // Calculate the average time
-                            long averageTime = totalTime / 3;
-                            worksheet.Cell(threadCount + 1, repetitions + 1).Value = averageTime;
+
+                            // Obliczanie średniego czasu dla tego powtórzenia
+                            long averageTime = totalTime / 5;
+                            worksheet.Cell(row, rep + 1).Value = averageTime;
+                            totalAverageTime += averageTime;
+
+                            // Wymuszenie oczyszczenia pamięci
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
                         }
+
+                        // Obliczanie ogólnego średniego czasu dla danej liczby wątków
+                        worksheet.Cell(row, repetitions + 2).Value = totalAverageTime / repetitions;
+
+                        // Przerwa między konfiguracjami liczby wątków
+                        Thread.Sleep(500);
+
+                        row++;
                     }
 
-                    // Save workbook to the specified file
+                    // Zapisanie skoroszytu do pliku
                     workbook.SaveAs(filePath);
 
                     MessageBox.Show("Plik Excel został wygenerowany pomyślnie.", "Informacja", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
         }
+
+
 
         private void PrzegladajPlikiPrzycisk_Click(object sender, RoutedEventArgs e)
         {
