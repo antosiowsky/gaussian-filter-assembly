@@ -55,7 +55,7 @@
 
             <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Height="62" Width="172" Grid.Column="1">
                 <TextBlock Text="Liczba wątków: " FontSize="12" HorizontalAlignment="Center" />
-                <Slider x:Name="ThreadSlider" Minimum="1" Maximum="16" Value="4" 
+                <Slider x:Name="ThreadSlider" Minimum="1" Maximum="64" Value="4" 
                         Width="160" TickFrequency="1" IsSnapToTickEnabled="True" Height="23" RenderTransformOrigin="0.505,0.378" />
                 <TextBlock x:Name="ThreadCountDisplay" Text="4" FontSize="12" HorizontalAlignment="Center" />
             </StackPanel>

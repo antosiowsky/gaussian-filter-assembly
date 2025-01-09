@@ -37,7 +37,7 @@ namespace JaProj
                 string filePath = saveFileDialog.FileName;
 
                 // Prepare data for testing
-                int maxRepetitions = 10; // Can be adjusted
+                int maxRepetitions = 20; // Can be adjusted
                 int maxThreads = (int)ThreadSlider.Maximum; // Ensure max thread count matches slider
 
                 // Create a new workbook
