@@ -7,7 +7,7 @@
 
 .data
 multiArray word 1, 2, 1, 2, 4, 2, 1, 2, 1      ; Macierz filtru 3x3
-normalizationFactor dq 9.0                     ; Wspó³czynnik normalizacji
+normalizationFactor dq 7.0                     ; Wspó³czynnik normalizacji
 
 .code
 ; ---------------------------------------------------
@@ -47,16 +47,16 @@ mainLoop:                            ; G³ówna pêtla przetwarzania
     pxor xmm3, xmm3
 
     ; £adowanie pikseli poza centralnym
-    pinsrb xmm3, byte ptr[RCX + R11 - 3], 0 ; Wstawienie bajtu z pozycji (RCX + R11 - 3) do bitów [7:0] (index 0) rejestru XMM3
-    pinsrb xmm1, byte ptr[RCX + R11], 1
+    pinsrb xmm1, byte ptr[RCX + R11 - 3], 0 ; Wstawienie bajtu z pozycji (RCX + R11 - 3) do bitów [7:0] (index 0) rejestru XMM3
+    pinsrb xmm3, byte ptr[RCX + R11], 1
     pinsrb xmm1, byte ptr[RCX + R11 + 3], 2
 
-    pinsrb xmm3, byte ptr[RCX - 3], 1
-    pinsrb xmm1, byte ptr[RCX + 3], 4
+    pinsrb xmm3, byte ptr[RCX - 3], 3
+    pinsrb xmm3, byte ptr[RCX + 3], 5
 
-    pinsrb xmm3, byte ptr[RCX + R10 - 3], 2
-    pinsrb xmm1, byte ptr[RCX + R10], 6
-    pinsrb xmm1, byte ptr[RCX + R10 + 3], 7
+    pinsrb xmm1, byte ptr[RCX + R10 - 3], 6
+    pinsrb xmm3, byte ptr[RCX + R10], 7
+    pinsrb xmm1, byte ptr[RCX + R10 + 3], 8
 
     ; Mno¿enie pikseli przez wagi
     psadbw xmm3, xmm2                ; Sumowanie wartoœci pikseli dla xmm3
@@ -65,13 +65,10 @@ mainLoop:                            ; G³ówna pêtla przetwarzania
 
     pxor xmm2, xmm2                  ; Wyzerowanie rejestru xmm2
     psadbw xmm1, xmm2                ; Sumowanie wartoœci pikseli dla xmm3
-    paddsw xmm1, xmm3                ; Polaczenie wynikow
-    pshufd xmm3, xmm3, 00111001b     
-    paddsw xmm1, xmm3                
+    paddsw xmm1, xmm3                ; Polaczenie wynikow             
 
     ; Normalizacja i zaokr¹glenie
-    pextrw eax, xmm1, 0              ; Ekstrakcja wartoœci
-    movsx eax, ax                    ; Rozszerzenie znaku
+    pextrw eax, xmm1, 0              ; Wyodrebnienie 4 wartoœci 16 bit wektorowo
     cvtsi2sd xmm0, eax               ; Konwersja na double
     divsd xmm0, xmm5                 ; Dzielenie przez wspó³czynnik normalizacji
     roundsd xmm0, xmm0, 0            ; Zaokr¹glenie do najbli¿szej liczby ca³kowitej
@@ -79,19 +76,19 @@ mainLoop:                            ; G³ówna pêtla przetwarzania
 
     ; Sprawdzanie zakresu
     cmp eax, 0
-    jl zeroValue
+    jl zeroValue                     ; Sprawdzenie czy wartosc jest mniejsza od 0 (jump less)
     cmp eax, 255
-    jg maxValue
-    mov byte ptr[R12], al
+    jg maxValue                      ; Sprawdzenie czy wartosc jest wieksza niz 255 (jump greater)
+    mov byte ptr[R12], al            ; Else zapisz do tabliczy nowych pixeli
     jmp nextPixel
 
 zeroValue:
-    mov eax, 0
+    mov eax, 0                       ; If mniejsza niz 0 ustaw na 0 
     mov byte ptr[R12], al
     jmp nextPixel
 
 maxValue:
-    mov eax, 255
+    mov eax, 255                     ; If wieksza niz 255 ustaw na 255 
     mov byte ptr[R12], al
 
 nextPixel:
