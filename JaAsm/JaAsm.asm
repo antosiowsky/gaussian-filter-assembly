@@ -6,8 +6,8 @@
 ; - Wersja 1.0: Implementacja podstawowej procedury przetwarzania obrazu.
 
 .data
-multiArray word 1, 2, 1, 2, 4, 2, 1, 2, 1      ; Macierz filtru konwolucyjnego 3x3
-normalizationFactor dq 9.0                     ; Wspó³czynnik normalizacji (sumaryczna waga filtra)
+multiArray word 1, 2, 1, 2, 4, 2, 1, 2, 1      ; Macierz filtru 3x3
+normalizationFactor dq 9.0                     ; Wspó³czynnik normalizacji
 
 .code
 ; ---------------------------------------------------
@@ -25,40 +25,40 @@ normalizationFactor dq 9.0                     ; Wspó³czynnik normalizacji (suma
 ; ---------------------------------------------------
 AsmProc proc
     sub rsp, 40                      ; Przygotowanie przestrzeni dla shadow space
-    movdqu xmm4, oword ptr[multiArray] ; Za³adowanie macierzy filtra do rejestru
-    movsd xmm5, qword ptr[normalizationFactor] ; Za³adowanie wspó³czynnika normalizacji
+    movdqu xmm4, oword ptr[multiArray] ; Wektorowe za³adowanie macierzy filtra do rejestru
+    movsd xmm5, qword ptr[normalizationFactor] ; Wektorowe za³adowanie wspó³czynnika normalizacji
 
     mov ebx, dword ptr[rbp + 48]     ; Szerokoœæ obrazu
     mov r10, rbx                     ; Przypisanie szerokoœci do R10
     xor r11, r11                     ; Wyzerowanie R11
-    sub r11, r10                     ; R11 = -width
+    sub r11, r10                     ; R11 = -width, aby przesun¹æ wskaŸnik do pikseli wstecz
 
-    mov r12, rdx                     ; WskaŸnik do nowych pikseli
-    mov rdi, r8                      ; Indeks pocz¹tkowy
-    add rcx, r8                      ; Przesuniêcie wskaŸnika do starych pikseli
-    add R12, r8                      ; Przesuniêcie wskaŸnika do nowych pikseli
+    mov r12, rdx                     ; Przepisz wskaŸnik do tablicy nowych pikseli
+    mov rdi, r8                      ; Przenies indeks pocz¹tkowy do licznika petli
+    add rcx, r8                      ; Przesuniêcie wskaŸnika do starych pikseli o index pocz
+    add R12, r8                      ; Przesuniêcie wskaŸnika do nowych pikseli o index pocz
 
 mainLoop:                            ; G³ówna pêtla przetwarzania
     cmp rdi, r9                      ; Sprawdzenie warunku zakoñczenia pêtli
     je exitLoop                      ; Wyjœcie z pêtli, jeœli indeks osi¹gnie koñcowy
 
-    pxor xmm1, xmm1                  ; Wyczyszczenie rejestrów
-    pxor xmm2, xmm2
+    pxor xmm1, xmm1                  ; Wektorowe wyczyszczenie rejestrów
+    pxor xmm2, xmm2                  ; XOR z samym soba to 0
     pxor xmm3, xmm3
 
-    ; £adowanie pikseli z wagami 1
+    ; £adowanie pikseli
     pinsrb xmm1, byte ptr[RCX + R11], 1
     pinsrb xmm1, byte ptr[RCX + R11 + 3], 2
     pinsrb xmm1, byte ptr[RCX + 3], 4
     pinsrb xmm1, byte ptr[RCX + R10], 6
     pinsrb xmm1, byte ptr[RCX + R10 + 3], 7
 
-    ; £adowanie pikseli z wagami -1
+    ; £adowanie pikseli 
     pinsrb xmm3, byte ptr[RCX + R11 - 3], 0
     pinsrb xmm3, byte ptr[RCX - 3], 1
     pinsrb xmm3, byte ptr[RCX + R10 - 3], 2
 
-    psadbw xmm3, xmm2                ; Sumowanie pikseli z wagami -1
+    psadbw xmm3, xmm2                ; Wektorowe sumowanie pikseli z wagami -1
     pinsrb xmm3, byte ptr[RCX], 4    ; Piksel z wag¹ -2
     pmullw xmm3, xmm4                ; Mno¿enie pikseli przez wagi
 
