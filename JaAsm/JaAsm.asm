@@ -46,27 +46,28 @@ mainLoop:                            ; G³ówna pêtla przetwarzania
     pxor xmm2, xmm2                  ; XOR z samym soba to 0
     pxor xmm3, xmm3
 
-    ; £adowanie pikseli
+    ; £adowanie pikseli poza centralnym
+    pinsrb xmm3, byte ptr[RCX + R11 - 3], 0 ; Wstawienie bajtu z pozycji (RCX + R11 - 3) do bitów [7:0] (index 0) rejestru XMM3
     pinsrb xmm1, byte ptr[RCX + R11], 1
     pinsrb xmm1, byte ptr[RCX + R11 + 3], 2
+
+    pinsrb xmm3, byte ptr[RCX - 3], 1
     pinsrb xmm1, byte ptr[RCX + 3], 4
+
+    pinsrb xmm3, byte ptr[RCX + R10 - 3], 2
     pinsrb xmm1, byte ptr[RCX + R10], 6
     pinsrb xmm1, byte ptr[RCX + R10 + 3], 7
 
-    ; £adowanie pikseli 
-    pinsrb xmm3, byte ptr[RCX + R11 - 3], 0
-    pinsrb xmm3, byte ptr[RCX - 3], 1
-    pinsrb xmm3, byte ptr[RCX + R10 - 3], 2
+    ; Mno¿enie pikseli przez wagi
+    psadbw xmm3, xmm2                ; Sumowanie wartoœci pikseli dla xmm3
+    pinsrb xmm3, byte ptr[RCX], 4    ; £adowanie piksela centralnego zeby nie bylo roznicy wzgl samego siebie
+    pmullw xmm3, xmm4                ; Mno¿enie wartoœci przez wagi filtra
 
-    psadbw xmm3, xmm2                ; Wektorowe sumowanie pikseli z wagami -1
-    pinsrb xmm3, byte ptr[RCX], 4    ; Piksel z wag¹ -2
-    pmullw xmm3, xmm4                ; Mno¿enie pikseli przez wagi
-
-    pxor xmm2, xmm2                  ; Wyczyszczenie xmm2
-    psadbw xmm1, xmm2                ; Sumowanie pikseli z wagami 1
-    paddsw xmm1, xmm3                ; Dodanie wartoœci z wagami -1 i -2
-    pshufd xmm3, xmm3, 00111001b     ; Przemieszczenie dla poprawnego sumowania
-    paddsw xmm1, xmm3                ; Dodanie wartoœci
+    pxor xmm2, xmm2                  ; Wyzerowanie rejestru xmm2
+    psadbw xmm1, xmm2                ; Sumowanie wartoœci pikseli dla xmm3
+    paddsw xmm1, xmm3                ; Polaczenie wynikow
+    pshufd xmm3, xmm3, 00111001b     
+    paddsw xmm1, xmm3                
 
     ; Normalizacja i zaokr¹glenie
     pextrw eax, xmm1, 0              ; Ekstrakcja wartoœci
