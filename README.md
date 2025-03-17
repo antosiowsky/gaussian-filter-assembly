@@ -19,10 +19,9 @@
       <li><strong>Number of Threads:</strong> Specifies the number of threads used for processing (1, 2, 4, 8, 16, 32, 64).</li>
       <li><strong>Input Data Type:</strong> Various image types (e.g., uniform, gradient, random) for testing the algorithm.</li>
       <li><strong>Computation Library:</strong> Specifies the computational method (pure assembly vs. C++ implementation).</li>
-   
-
   </ul>
-   ![menu](https://github.com/user-attachments/assets/2b1d508e-84cc-49cd-a39e-c003fc42c27f)
+  <img src="https://github.com/user-attachments/assets/dee18795-0a35-40fb-9a74-77260c759735" alt="Menu">
+
   <h2>Assembly Code Snippet</h2>
   <pre>
 ; Loading neighboring pixels
