@@ -20,7 +20,7 @@
       <li><strong>Input Data Type:</strong> Various image types (e.g., uniform, gradient, random) for testing the algorithm.</li>
       <li><strong>Computation Library:</strong> Specifies the computational method (pure assembly vs. C++ implementation).</li>
   </ul>
-  <img src="https://github.com/user-attachments/assets/dee18795-0a35-40fb-9a74-77260c759735" alt="Menu">
+  
 
   <h2>Assembly Code Snippet</h2>
   <pre>
@@ -49,7 +49,7 @@ paddsw xmm1, xmm3
       <li>Adjust the number of threads using a slider.</li>
       <li>Apply the Gaussian filter and save the output image.</li>
   </ul>
-  
+  <img src="https://github.com/user-attachments/assets/dee18795-0a35-40fb-9a74-77260c759735" alt="Menu">
   <h2>Performance Measurements</h2>
   <p>Testing was performed on three different image sizes: small (640x426), medium (1280x853), and large (1920x1280).</p>
   <p>Performance comparisons were made between ASM and C++ implementations using various threading configurations (1, 2, 4, 8, 16, 32, 64 threads).</p>
